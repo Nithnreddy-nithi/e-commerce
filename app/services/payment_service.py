@@ -2,6 +2,7 @@ import uuid
 from fastapi import HTTPException, status
 from app.core.config import settings
 from app.repositories.payment_repo import PaymentRepository
+from app.repositories.shipment_repo import ShipmentRepository
 from app.models.order import Order
 from app.schemas.payment import PaymentResponse, PaymentVerify
 import logging
@@ -83,7 +84,16 @@ class PaymentService:
         if not payment:
             raise HTTPException(status_code=404, detail="Payment record not found")
 
-        # Mark as success
+        # Mark as success — this also updates order status to CONFIRMED
         await self.payment_repo.mark_payment_success(payment, verification_data.razorpay_payment_id)
+
+        # Auto-create a Shipment record for this order (ready_to_ship)
+        shipment_repo = ShipmentRepository(self.payment_repo.session)
+        try:
+            await shipment_repo.create_shipment(payment.order_id)
+            logger.info(f"Shipment created for order #{payment.order_id}")
+        except Exception as e:
+            # Don't fail payment verification if shipment creation fails (e.g., duplicate)
+            logger.warning(f"Shipment creation skipped for order #{payment.order_id}: {e}")
         
         return True

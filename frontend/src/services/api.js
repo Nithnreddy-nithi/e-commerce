@@ -22,14 +22,12 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle errors (optional)
+// Response interceptor to handle errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
             // Optional: Redirect to login or clear token if 401
-            // localStorage.removeItem('token');
-            // window.location.href = '/login';
         }
         return Promise.reject(error);
     }
@@ -56,6 +54,14 @@ export const apiMethods = {
     // Payments
     createPaymentOrder: (orderId) => api.post(`/payments/order/${orderId}`),
     verifyPayment: (data) => api.post('/payments/verify', data),
+
+    // Addresses
+    getAddresses: () => api.get('/address/'),
+    createAddress: (data) => api.post('/address/', data),
+    deleteAddress: (id) => api.delete(`/address/${id}`),
+
+    // Coupons / Offers
+    applyCoupon: (code, cartTotal) => api.post(`/offers/${code}/apply`, { cart_total: cartTotal }),
 };
 
 export default { ...api, ...apiMethods };

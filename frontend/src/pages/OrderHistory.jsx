@@ -189,20 +189,67 @@ const OrderHistory = () => {
                                         </div>
                                     </div>
 
-                                    {/* Shipment Info */}
-                                    {order.shipment && (
-                                        <div className="px-5 pb-5">
-                                            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Shipment</p>
-                                                <p className="text-sm text-blue-900">
-                                                    Tracking: <span className="font-mono font-medium">{order.shipment.tracking_number || 'Pending'}</span>
-                                                </p>
-                                                <p className="text-xs text-blue-600 mt-0.5">
-                                                    Status: {order.shipment.status || 'Processing'}
-                                                </p>
+                                    {/* Shipment Tracking */}
+                                    {order.shipment && (() => {
+                                        const steps = [
+                                            { key: 'confirmed', label: 'Confirmed' },
+                                            { key: 'ready_to_ship', label: 'Ready to Ship' },
+                                            { key: 'shipped', label: 'Shipped' },
+                                            { key: 'delivered', label: 'Delivered' },
+                                        ];
+                                        const currentIdx = steps.findIndex(s => s.key === order.shipment.status);
+                                        return (
+                                            <div className="px-5 pb-5">
+                                                <div className="bg-white rounded-xl p-4 border border-gray-100">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Shipment Tracking</p>
+
+                                                    {/* Progress Stepper */}
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        {steps.map((step, idx) => (
+                                                            <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${idx <= currentIdx
+                                                                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                                                                            : 'bg-gray-100 text-gray-400'
+                                                                        }`}>
+                                                                        {idx <= currentIdx ? (
+                                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                                            </svg>
+                                                                        ) : idx + 1}
+                                                                    </div>
+                                                                    <p className={`text-[10px] mt-1.5 font-medium whitespace-nowrap ${idx <= currentIdx ? 'text-indigo-600' : 'text-gray-400'
+                                                                        }`}>{step.label}</p>
+                                                                </div>
+                                                                {idx < steps.length - 1 && (
+                                                                    <div className={`flex-1 h-0.5 mx-2 mt-[-16px] rounded ${idx < currentIdx ? 'bg-indigo-500' : 'bg-gray-100'
+                                                                        }`}></div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Courier & Tracking */}
+                                                    {(order.shipment.courier_name || order.shipment.tracking_id) && (
+                                                        <div className="flex gap-4 pt-3 border-t border-gray-50 text-xs">
+                                                            {order.shipment.courier_name && (
+                                                                <div>
+                                                                    <p className="text-gray-400">Courier</p>
+                                                                    <p className="font-medium text-gray-900">{order.shipment.courier_name}</p>
+                                                                </div>
+                                                            )}
+                                                            {order.shipment.tracking_id && (
+                                                                <div>
+                                                                    <p className="text-gray-400">Tracking ID</p>
+                                                                    <p className="font-mono font-medium text-gray-900">{order.shipment.tracking_id}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>
