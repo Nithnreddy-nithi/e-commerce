@@ -9,3 +9,4 @@ email-validator
 asyncpg
 greenlet
 python-multipart
+cachetools

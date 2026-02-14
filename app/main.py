@@ -55,3 +55,9 @@ async def startup():
 @app.get("/")
 def read_root():
     return {"message": "Welcome to E-commerce API - PostgreSQL"}
+
+@app.get("/cache/stats")
+def cache_stats():
+    """View cache statistics (sizes, TTLs)."""
+    from app.core.cache import cache_manager
+    return cache_manager.stats()

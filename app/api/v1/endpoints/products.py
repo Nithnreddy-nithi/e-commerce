@@ -11,25 +11,37 @@ from app.models.user import User
 router = APIRouter()
 
 
-
 @router.get("/", response_model=List[ProductResponse])
 async def read_products(
+    skip: int = 0, limit: int = 100,
+    search: str | None = None,
+    category_id: int | None = None,
+    db: AsyncSession = Depends(get_db)
+):
+    repo = ProductRepository(db)
+    service = ProductService(repo)
+    return await service.get_all_products(skip=skip, limit=limit, search=search, category_id=category_id)
+
+# Categories MUST come BEFORE /{product_id} so FastAPI matches them first
+@router.get("/categories", response_model=List[CategoryResponse])
+async def read_categories(
     skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
 ):
     repo = ProductRepository(db)
     service = ProductService(repo)
-    return await service.get_all_products(skip=skip, limit=limit)
+    return await service.get_categories(skip=skip, limit=limit)
 
-@router.post("/", response_model=ProductResponse)
-async def create_product(
-    product_in: ProductCreate,
+@router.post("/categories", response_model=CategoryResponse)
+async def create_category(
+    category_in: CategoryCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_active_superuser)
 ):
     repo = ProductRepository(db)
     service = ProductService(repo)
-    return await service.create_product(product_in)
+    return await service.create_category(category_in)
 
+# Dynamic path param routes AFTER static paths
 @router.get("/{product_id}", response_model=ProductResponse)
 async def read_product(
     product_id: int, db: AsyncSession = Depends(get_db)
@@ -40,6 +52,16 @@ async def read_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
+
+@router.post("/", response_model=ProductResponse)
+async def create_product(
+    product_in: ProductCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_superuser)
+):
+    repo = ProductRepository(db)
+    service = ProductService(repo)
+    return await service.create_product(product_in)
 
 @router.put("/{product_id}", response_model=ProductResponse)
 async def update_product(
@@ -54,21 +76,3 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
-
-@router.post("/categories", response_model=CategoryResponse)
-async def create_category(
-    category_in: CategoryCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(deps.get_current_active_superuser)
-):
-    repo = ProductRepository(db)
-    service = ProductService(repo)
-    return await service.create_category(category_in)
-
-@router.get("/categories", response_model=List[CategoryResponse])
-async def read_categories(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
-):
-    repo = ProductRepository(db)
-    service = ProductService(repo)
-    return await service.get_categories(skip=skip, limit=limit)

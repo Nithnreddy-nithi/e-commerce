@@ -31,9 +31,17 @@
 
 ### 🏷️ Product Catalog
 - Product listing with images and categories
+- **Search bar** with debounced input (500ms)
+- **Category filter pills** (toggle on/off)
 - Product detail pages
-- Category-based organization
 - Stock quantity tracking
+- Infinite scroll pagination
+
+### ⚡ Performance & Caching
+- **Backend TTL cache** for products/categories (5–30 min)
+- **React Query** on frontend (smart API caching + stale-while-revalidate)
+- Cache invalidation on product/category create/update
+- Cache stats monitoring endpoint (`/cache/stats`)
 
 ### 📍 Address Management
 - CRUD operations for shipping addresses
@@ -56,6 +64,7 @@
 | **PostgreSQL** | Primary database |
 | **asyncpg** | Async PostgreSQL driver |
 | **Alembic** | Database migrations |
+| **cachetools** | In-memory TTL caching |
 | **python-jose** | JWT token handling |
 | **passlib + bcrypt** | Password hashing |
 | **Pydantic v2** | Schema validation |
@@ -68,6 +77,7 @@
 | **Vite 7** | Build tool & dev server |
 | **Tailwind CSS 4** | Utility-first CSS framework |
 | **React Router 7** | Client-side routing |
+| **TanStack React Query** | API response caching & data fetching |
 | **Axios** | HTTP client for API calls |
 | **Context API** | State management (Auth + Cart) |
 
@@ -289,6 +299,7 @@ ecomrce/
 │   │       └── offers.py            # Coupon & offers
 │   ├── core/
 │   │   ├── config.py                # Settings from .env
+│   │   ├── cache.py                 # In-memory TTL cache manager
 │   │   ├── database.py              # Async SQLAlchemy engine & session
 │   │   └── security.py              # Password hashing & JWT creation
 │   ├── models/                      # SQLAlchemy ORM models
@@ -345,6 +356,72 @@ ecomrce/
 
 ---
 
+## ⚡ Caching Architecture
+
+The app uses a **two-layer caching strategy** for performance:
+
+### Backend Cache (In-Memory TTL)
+
+Using `cachetools` with a centralized `CacheManager` (`app/core/cache.py`):
+
+| Namespace | What's Cached | TTL | Max Entries | Invalidation |
+|---|---|---|---|---|
+| `products_list` | Product list queries (by search/category/page) | 5 min | 128 | On product create/update |
+| `product_detail` | Single product by ID | 5 min | 256 | On that product update |
+| `categories` | Category list | 30 min | 1 | On category create |
+
+**Pattern:** Cache-aside (check cache → miss → query DB → populate cache)
+
+**Monitoring:** `GET /cache/stats` returns current cache sizes and TTLs:
+```json
+{
+  "products_list": { "size": 12, "maxsize": 128, "ttl": 300 },
+  "product_detail": { "size": 45, "maxsize": 256, "ttl": 300 },
+  "categories": { "size": 1, "maxsize": 1, "ttl": 1800 }
+}
+```
+
+### Frontend Cache (React Query)
+
+Using `@tanstack/react-query` with `QueryClientProvider`:
+
+| Query Key | What's Cached | Stale Time | Behavior |
+|---|---|---|---|
+| `['products', search, category, page]` | Product search results | 5 min | `placeholderData` keeps old results visible |
+| `['categories']` | Category list | 30 min | Fetched once, shared across components |
+| `['orders']` | Order history | 2 min | Background refetch on stale |
+
+**Benefits:**
+- Going back to products page → **instant** (cache hit, no API call)
+- Switching categories → shows previous results while loading (no flicker)
+- Deduplication — multiple components requesting same data = 1 API call
+
+```
+┌──────────────────────────────────────────────────────┐
+│                 Frontend (React)                     │
+│  ┌──────────────────────────────────────────────┐    │
+│  │           React Query Cache                  │    │
+│  │  products: 5min │ categories: 30min │ ...    │    │
+│  └────────────────────┬─────────────────────────┘    │
+│                       │ cache miss → API call         │
+└───────────────────────┼──────────────────────────────┘
+                        ▼
+┌──────────────────────────────────────────────────────┐
+│                Backend (FastAPI)                      │
+│  ┌──────────────────────────────────────────────┐    │
+│  │        CacheManager (cachetools TTL)         │    │
+│  │  products_list: 5min │ categories: 30min     │    │
+│  └────────────────────┬─────────────────────────┘    │
+│                       │ cache miss → DB query         │
+└───────────────────────┼──────────────────────────────┘
+                        ▼
+              ┌──────────────────┐
+              │   PostgreSQL DB   │
+              └──────────────────┘
+```
+
+---
+
 ## 📝 Development Notes
 
 - **Async Everything**: All database operations use SQLAlchemy's `AsyncSession` with `asyncpg` driver
@@ -352,6 +429,8 @@ ecomrce/
 - **Unit of Work**: Database operations use `flush()` + single `commit()` at the end of each request for transactional safety
 - **Auto-reload**: Backend uses `uvicorn --reload` for hot-reloading during development
 - **Mock Payments**: Auto-detected from key prefix — no code changes needed to switch between mock and real payments
+- **Two-Layer Cache**: Backend (cachetools TTL) + Frontend (React Query) for maximum performance
+- **Cache Invalidation**: Write operations automatically clear relevant backend caches
 
 ---
 

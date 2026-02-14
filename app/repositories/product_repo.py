@@ -9,10 +9,16 @@ class ProductRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all_products(self, skip: int = 0, limit: int = 100) -> List[Product]:
-        result = await self.session.execute(
-            select(Product).order_by(Product.id).offset(skip).limit(limit)
-        )
+    async def get_all_products(self, skip: int = 0, limit: int = 100, search: str | None = None, category_id: int | None = None) -> List[Product]:
+        query = select(Product)
+        if search:
+            query = query.filter(
+                Product.name.ilike(f"%{search}%") | Product.description.ilike(f"%{search}%")
+            )
+        if category_id:
+            query = query.filter(Product.category_id == category_id)
+        query = query.order_by(Product.id).offset(skip).limit(limit)
+        result = await self.session.execute(query)
         return result.scalars().all()
 
     async def get_product(self, product_id: int) -> Optional[Product]:

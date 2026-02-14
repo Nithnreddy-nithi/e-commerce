@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 
 const statusConfig = {
@@ -13,25 +14,16 @@ const statusConfig = {
 const getStatus = (status) => statusConfig[status?.toLowerCase()] || statusConfig.pending;
 
 const OrderHistory = () => {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [expandedOrder, setExpandedOrder] = useState(null);
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const response = await api.getOrders();
-                setOrders(response.data);
-            } catch (err) {
-                console.error("Failed to fetch orders", err);
-                setError("Failed to load orders.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOrders();
-    }, []);
+    const { data: orders = [], isLoading: loading, error } = useQuery({
+        queryKey: ['orders'],
+        queryFn: async () => {
+            const res = await api.getOrders();
+            return res.data;
+        },
+        staleTime: 2 * 60 * 1000, // 2 min cache
+    });
 
     if (loading) {
         return (
@@ -209,8 +201,8 @@ const OrderHistory = () => {
                                                             <div key={step.key} className="flex items-center flex-1 last:flex-none">
                                                                 <div className="flex flex-col items-center">
                                                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${idx <= currentIdx
-                                                                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                                                                            : 'bg-gray-100 text-gray-400'
+                                                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                                                                        : 'bg-gray-100 text-gray-400'
                                                                         }`}>
                                                                         {idx <= currentIdx ? (
                                                                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
