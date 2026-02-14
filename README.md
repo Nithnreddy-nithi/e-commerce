@@ -388,17 +388,7 @@ ecomrce/
 
 ---
 
-## 🔧 Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost:5432/ecommerce` |
-| `SECRET_KEY` | JWT signing key (min 32 chars) | `your-super-secret-key-here-1234` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiry | `30` |
-| `RAZORPAY_KEY_ID` | Razorpay API key (or `mock_*`) | `mock_test_key` |
-| `RAZORPAY_KEY_SECRET` | Razorpay secret | `mock_test_secret` |
-| `BACKEND_CORS_ORIGINS` | Allowed frontend origins | `["http://localhost:5173"]` |
 
 ---
 
