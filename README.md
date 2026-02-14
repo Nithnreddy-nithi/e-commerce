@@ -114,56 +114,9 @@
 - **Node.js 18+**
 - **PostgreSQL 14+**
 
-### 1. Clone & Setup Backend
 
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd ecomrce
 
-# Create and activate virtual environment
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
 
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Configure Environment
-
-Create a `.env` file in the project root:
-
-```env
-# Database
-DATABASE_URL="postgresql+asyncpg://postgres:YOUR_PASSWORD@localhost:5432/ecommerce"
-
-# JWT
-SECRET_KEY="your-secret-key-min-32-chars"
-ALGORITHM="HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# Razorpay (use mock_ prefix for development)
-RAZORPAY_KEY_ID="mock_test_key"
-RAZORPAY_KEY_SECRET="mock_test_secret"
-
-# CORS
-BACKEND_CORS_ORIGINS=["http://localhost:5173", "http://localhost:3000"]
-```
-
-> **💡 Tip:** Use `mock_` prefix for Razorpay keys during development. The app auto-detects this and uses a simulated payment dialog.
-
-### 3. Setup Database
-
-```bash
-# Create the PostgreSQL database
-createdb ecommerce
-
-# Run migrations
-alembic upgrade head
-
-# (Optional) Seed with sample products
-python seed_products.py
 ```
 
 ### 4. Start Backend Server
@@ -402,11 +355,6 @@ ecomrce/
 
 ---
 
-## 📄 License
-
-This project is for educational and portfolio purposes.
-
----
 
 <p align="center">
   Built with ❤️ using FastAPI + React
